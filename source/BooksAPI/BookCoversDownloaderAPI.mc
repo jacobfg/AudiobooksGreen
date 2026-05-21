@@ -46,13 +46,17 @@ class BookCoversDownloaderAPI extends BooksAPI {
         "width" => coverMaxSize,
         "format" => "jpeg",
       };
+
       var options = {
         :maxWidth => coverMaxSize,
         :maxHeight => coverMaxSize,
         :dithering => Communications.IMAGE_DITHERING_FLOYD_STEINBERG,
-        :packingFormat => Communications.PACKING_FORMAT_JPG,
       };
 
+      if (Communications has :PACKING_FORMAT_JPG){
+        options[:packingFormat] = Communications.PACKING_FORMAT_JPG;
+      }
+      
       WebRequest.makeImageRequest(
         url,
         params,
