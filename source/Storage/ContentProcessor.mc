@@ -15,20 +15,28 @@ module ContentProcessor {
   ) {
     var result = null;
     var files = BooksStore.getFileList(bookId);
-    if (files instanceof Lang.Array) {
+    if (files instanceof Lang.Array and files.size() > 0) {
+      var unixTime = Time.now().value();
+      if (progresUpdatedUnixTime != null) {
+        unixTime = progresUpdatedUnixTime;
+      }
       var remain = progressInSeconds;
       for (var i = 0; i < files.size(); i++) {
         var fileDuration = files[i][BooksStore.DURATION];
         if (remain < fileDuration) {
-          var unixTime = Time.now().value();
-          if (progresUpdatedUnixTime != null) {
-            unixTime = progresUpdatedUnixTime;
-          }
           result = [i, remain, unixTime];
           break;
         } else {
           remain -= fileDuration;
         }
+      }
+      if (result == null) {
+        // Позиция на конце книги или за ним (книга дослушана на сервере).
+        // Прижимаем к последнему файлу, иначе null исключил бы книгу из
+        // сравнения и устаревшая закладка устройства перезаписала бы
+        // прогресс сервера.
+        var lastInd = files.size() - 1;
+        result = [lastInd, files[lastInd][BooksStore.DURATION], unixTime];
       }
     }
     return result;
@@ -45,6 +53,18 @@ module ContentProcessor {
       }
     }
     return result;
+  }
+
+  // **************************************************************************
+  function totalDuration(bookId) {
+    var files = BooksStore.getFileList(bookId);
+    var duration = 0;
+    if (files instanceof Lang.Array) {
+      for (var i = 0; i < files.size(); i++) {
+        duration += files[i][BooksStore.DURATION];
+      }
+    }
+    return duration;
   }
 
   // **************************************************************************
