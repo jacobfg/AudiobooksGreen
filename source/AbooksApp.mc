@@ -8,7 +8,7 @@ import Toybox.System;
 
 class AbooksApp extends Application.AudioContentProviderApp {
   
-  const version = "2026.09.02.01";
+  const version = "2026.09.02.01b";
   var manualSyncStarted = false;
 
   function initialize() {
