@@ -89,7 +89,7 @@ class ProgressAPI extends BooksAPI {
     var bookId = bookKeys[keyIndex];
     if (code == 200) {
       var currentProgress = data["currentTime"].toLong();
-      var progressTime = data["lastUpdate"].toLong() / 1000;
+      var progressTime = (data["lastUpdate"].toDouble() / 1000).toLong();
 
       var isFinished = false;
       if (data["isFinished"] != null) {
