@@ -19,7 +19,13 @@ class BooksStore {
     DURATION = "duration",
     BOOKMARK = "bookmark",
     URL_SUBSCRIPTION = "subscr",
+    LISTENING = "listening",
   }
+
+  // Дельты больше этого значения считаем перемоткой, а не прослушиванием.
+  // Интервал уведомлений плеера - 5 секунд, шаг перемотки - 30,
+  // поэтому 15 покрывает пропущенные тики и исключает перемотку.
+  const MAX_LISTENING_DELTA = 15;
 
   var booksOnDevice = null;
 
@@ -153,6 +159,9 @@ class BooksStore {
 
     // Удаляем закладку
     Application.Storage.deleteValue(BOOKMARK + idToRemove);
+
+    // Удаляем счётчик прослушивания
+    Application.Storage.deleteValue(LISTENING + idToRemove);
 
     // Возможно данная книга отмечена текущей прослушиваемой
     // если это так, удаляем ссылку
@@ -427,22 +436,74 @@ class BooksStore {
   function saveBookmark(bookId, bookmarkItem) {
     var storageId = BOOKMARK + bookId;
     var old_bookmark = Application.Storage.getValue(storageId);
-    if (
+    var positionChanged =
       old_bookmark == null or
       old_bookmark[0] != bookmarkItem[0] or
-      old_bookmark[1] != bookmarkItem[1]
-    ) {
-      // Записываем только при изменении
+      old_bookmark[1] != bookmarkItem[1];
+
+    if (positionChanged) {
       logger.debug(
         "Saved the bookmark for the book: " + bookId + " - " + bookmarkItem
       );
-      Application.Storage.setValue(storageId, bookmarkItem);
     }
+    // Пишем всегда: даже при той же позиции нужно обновить отметку времени,
+    // иначе закладка устройства выглядит устаревшей и проигрывает
+    // сравнение с сервером при каждой синхронизации.
+    Application.Storage.setValue(storageId, bookmarkItem);
   }
 
   // **************************************************************************
   function getBookmark(bookId) {
     return Application.Storage.getValue(BOOKMARK + bookId);
+  }
+
+  // **************************************************************************
+  // Накопленное время прослушивания для книги.
+  // Хранится как [ключСессии, секунды].
+  // timeListening на сервере АБСОЛЮТНО в рамках одного id сессии
+  // (psm.js:209 - присваивание, а не сложение), поэтому счётчик
+  // сбрасывается только вместе со сменой ключа сессии.
+  function getListening(bookId) {
+    var stored = Application.Storage.getValue(LISTENING + bookId);
+    if (!(stored instanceof Lang.Array)) {
+      return null;
+    }
+    return stored;
+  }
+
+  // **************************************************************************
+  // Прибавляет прослушанное время, если позиция сдвинулась вперёд
+  // на правдоподобную величину. Перемотка вперёд и назад не считается.
+  function addListeningTime(bookId, oldAbsolutePosition, newAbsolutePosition) {
+    if (oldAbsolutePosition == null) {
+      return;
+    }
+    var delta = newAbsolutePosition - oldAbsolutePosition;
+    if (delta <= 0 or delta > MAX_LISTENING_DELTA) {
+      return;
+    }
+
+    var storageId = LISTENING + bookId;
+    var stored = Application.Storage.getValue(storageId);
+    var sessionKey = null;
+    var seconds = 0;
+    if (stored instanceof Lang.Array) {
+      sessionKey = stored[0];
+      seconds = stored[1];
+    }
+    if (sessionKey == null) {
+      // Ключ сессии должен быть стабильным между повторами отправки,
+      // поэтому он привязан ко времени начала прослушивания.
+      sessionKey = Time.now().value().toString();
+    }
+    Application.Storage.setValue(storageId, [sessionKey, seconds + delta]);
+  }
+
+  // **************************************************************************
+  // Вызывается после успешной синхронизации: сессия закрыта,
+  // следующее прослушивание должно получить новый id.
+  function rotateListeningSession(bookId) {
+    Application.Storage.deleteValue(LISTENING + bookId);
   }
 
   // **************************************************************************
@@ -456,6 +517,22 @@ class BooksStore {
     if (files instanceof Lang.Array) {
       for (var i = 0; i < files.size(); i++) {
         if (files[i][FILE_CONTENT_ID] == contentId) {
+          var oldBookmark = BooksStore.getBookmark(bookId);
+          var oldAbsolute = null;
+          if (oldBookmark instanceof Lang.Array) {
+            oldAbsolute = ContentProcessor.absolutePositionFromBookmark(
+              bookId,
+              oldBookmark[0],
+              oldBookmark[1]
+            );
+          }
+          var newAbsolute = ContentProcessor.absolutePositionFromBookmark(
+            bookId,
+            i,
+            position
+          );
+          BooksStore.addListeningTime(bookId, oldAbsolute, newAbsolute);
+
           var now = Time.now();
           var newBookmark = [i, position, now.value()];
           BooksStore.saveBookmark(bookId, newBookmark);
