@@ -16,6 +16,8 @@ enum {
   SERVER = "server",
   PROXY = "proxy",
   TOKEN = "token",
+  CF_ACCESS_CLIENT_ID = "cfAccessClientId",
+  CF_ACCESS_CLIENT_SECRET = "cfAccessClientSecret",
   LENGHT_COMPLICATIONS = "lenghtComplications",
 
   URL = "url",

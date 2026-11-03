@@ -1,5 +1,6 @@
 import Toybox.Communications;
 import Toybox.Lang;
+import Toybox.Application;
 
 class WebRequestWrapper {
   hidden var finalCallback;
@@ -128,6 +129,45 @@ class WebRequestWrapper {
 }
 
 module WebRequest {
+  // Cloudflare Access credentials are only sent to the configured ABS server.
+  // In particular, do not disclose them to the optional proxy or other hosts.
+  function addCloudflareAccessHeaders(url, options) {
+    var server = Application.Properties.getValue(SERVER);
+    var clientId = Application.Properties.getValue(CF_ACCESS_CLIENT_ID);
+    var clientSecret = Application.Properties.getValue(CF_ACCESS_CLIENT_SECRET);
+
+    if (server != null and server.length() > 0) {
+      var lastCharacter = server.substring(server.length() - 1, server.length());
+      if (lastCharacter.equals("/")) {
+        server = server.substring(0, server.length() - 1);
+      }
+    }
+
+    if (
+      server == null or
+      server.equals("") or
+      url.length() < server.length() or
+      !url.substring(0, server.length()).equals(server) or
+      clientId == null or
+      clientId.equals("") or
+      clientSecret == null or
+      clientSecret.equals("")
+    ) {
+      return;
+    }
+
+    var headers = {};
+    if (options[:headers] != null) {
+      var headerKeys = options[:headers].keys();
+      for (var i = 0; i < headerKeys.size(); i++) {
+        headers[headerKeys[i]] = options[:headers][headerKeys[i]];
+      }
+    }
+    headers["CF-Access-Client-Id"] = clientId;
+    headers["CF-Access-Client-Secret"] = clientSecret;
+    options[:headers] = headers;
+  }
+
   function makeWebRequest(url, params, options, callback) {
     var context = null;
     // создаем новые опции, чтобы не испортить старые
@@ -141,6 +181,7 @@ module WebRequest {
         newOptions[keys[i]] = options[keys[i]];
       }
     }
+    addCloudflareAccessHeaders(url, newOptions);
     var request = new WebRequestWrapper(context);
     request.start(url, params, newOptions, callback);
   }

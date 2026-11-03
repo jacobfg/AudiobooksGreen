@@ -40,6 +40,22 @@ class MenuAuthorization extends WatchUi.Menu2 {
         null
       )
     );
+    addItem(
+      new PickerItem(
+        Rez.Strings.cfAccessClientId,
+        Application.Properties.getValue(CF_ACCESS_CLIENT_ID),
+        CF_ACCESS_CLIENT_ID,
+        null
+      )
+    );
+    addItem(
+      new PickerItem(
+        Rez.Strings.cfAccessClientSecret,
+        Application.Properties.getValue(CF_ACCESS_CLIENT_SECRET),
+        CF_ACCESS_CLIENT_SECRET,
+        null
+      )
+    );
     // addItem(
     //   new PickerItem(
     //     Rez.Strings.token,

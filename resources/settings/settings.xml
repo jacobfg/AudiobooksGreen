@@ -20,6 +20,14 @@
 		<settingConfig type="alphaNumeric" />
 	</setting>
 
+	<setting propertyKey="@Properties.cfAccessClientId" title="@Strings.cfAccessClientId">
+		<settingConfig type="alphaNumeric" />
+	</setting>
+
+	<setting propertyKey="@Properties.cfAccessClientSecret" title="@Strings.cfAccessClientSecret">
+		<settingConfig type="alphaNumeric" />
+	</setting>
+
 	<setting propertyKey="@Properties.translitComplications" title="@Strings.translitComplications">
 		<settingConfig type="boolean" />
 	</setting>

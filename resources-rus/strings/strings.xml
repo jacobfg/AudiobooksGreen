@@ -7,6 +7,8 @@
     <string id="proxy">Ваш прокси (не обязательно)</string>
     <string id="notSet">Не задан</string>
     <string id="token">API token</string>
+    <string id="cfAccessClientId">Cloudflare Access client ID</string>
+    <string id="cfAccessClientSecret">Cloudflare Access client secret</string>
     <string id="booksFolder">Плейлист на сервере</string>
     <string id="notSelected">Не выбран</string>
     <string id="noFoldersFound">Не найдены папки на сервере</string>

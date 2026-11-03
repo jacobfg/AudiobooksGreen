@@ -7,6 +7,8 @@
     <string id="proxy">Your proxy (optional)</string>
     <string id="notSet">Not set</string>
     <string id="token">API token</string>
+    <string id="cfAccessClientId">Cloudflare Access client ID</string>
+    <string id="cfAccessClientSecret">Cloudflare Access client secret</string>
     <string id="booksFolder">Servers playlist</string>
     <string id="notSelected">Not selected</string>
     <string id="noFoldersFound">No folders found on server</string>
